@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getCurrentUser } from '../utils/auth';
+import { getCurrentUser,getFullName, getDisplayName } from '../utils/auth';
 import { customerAPI, leadAPI, taskAPI, saleAPI } from '../services/api';
 import './Dashboard.css';
 
@@ -17,6 +17,27 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const user = getCurrentUser();
+
+  // Add debug logging
+  useEffect(() => {
+    console.log('Dashboard user:', user);
+    console.log('Full name:', getFullName());
+    console.log('Display name:', getDisplayName());
+    
+    // Debug JWT token
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          console.log('JWT payload:', payload);
+        }
+      } catch (error) {
+        console.error('Error decoding token:', error);
+      }
+    }
+  }, []);
 
   // Dummy data for demonstration
   const dummyStats = {
@@ -156,8 +177,9 @@ const Dashboard = () => {
       {/* Header Section */}
       <div className="dashboard-header">
         <div className="header-content">
+          {/* Updated to use getDisplayName */}
           <h1 className="page-title">
-            {getGreeting()}, {user?.name || user?.email?.split('@')[0]}!
+            {getGreeting()}, {getFullName() || 'User'}!
           </h1>
           <p className="page-subtitle">
             Here's what's happening with your business today

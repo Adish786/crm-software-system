@@ -1,6 +1,8 @@
 package com.crm.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.persistence.Column;
+import jakarta.validation.constraints.NotBlank;
 
 @Schema(description = "Login response with JWT token")
 public class LoginResponse {
@@ -14,14 +16,20 @@ public class LoginResponse {
     @Schema(description = "User's role", example = "USER")
     private String role;
 
-    // Default constructor
+    @Schema(description = "JWT authentication refreshtoken", example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
+    private String refreshToken;
+
+    @Schema(description = "Full name of the user", example = "John Doe", required = true)
+    private String fullName;
+
     public LoginResponse() {}
 
-    // Parameterized constructor
-    public LoginResponse(String token, String email, String role) {
+    public LoginResponse(String token, String email, String role, String refreshToken, String fullName) {
         this.token = token;
         this.email = email;
         this.role = role;
+        this.refreshToken = refreshToken;
+        this.fullName = fullName;
     }
 
     // Getters and setters
@@ -47,5 +55,21 @@ public class LoginResponse {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 }

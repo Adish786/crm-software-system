@@ -47,7 +47,10 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
-                                "/configuration/**"
+                                "/configuration/**",
+                                "/api/login",
+                                 "/api/register",
+                                  "/api/refresh-token"
                         ).permitAll()
 
                         // PROTECTED ENDPOINTS - Match the roles from your JWT

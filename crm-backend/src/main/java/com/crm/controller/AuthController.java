@@ -3,6 +3,7 @@ package com.crm.controller;
 
 import com.crm.dto.LoginRequest;
 import com.crm.dto.LoginResponse;
+import com.crm.dto.RefreshTokenRequest;
 import com.crm.dto.RegisterRequest;
 import com.crm.enums.Role;
 import com.crm.model.User;
@@ -20,6 +21,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -78,8 +80,8 @@ public class AuthController {
     }
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@Valid @RequestBody LoginRequest authRequest) {
+
         try {
-            // Authenticate user
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             authRequest.getEmail(),
@@ -88,27 +90,52 @@ public class AuthController {
             );
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(401).body("Invalid email or password");
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Authentication failed: " + e.getMessage());
         }
 
-        // Load user details and generate token
         final UserDetails userDetails = userDetailsService.loadUserByUsername(authRequest.getEmail());
-        final String jwt = jwtUtil.generateToken(userDetails);
 
-        // Get user role - use join() to get the result from CompletableFuture
-        try {
-            Optional<User> userOptional = userService.findByEmail(authRequest.getEmail()).join();
-            if (userOptional.isPresent()) {
-                User user = userOptional.get();
-                return ResponseEntity.ok(new LoginResponse(jwt, user.getEmail(), user.getRole().toString()));
-            } else {
-                return ResponseEntity.status(404).body("User not found");
-            }
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error retrieving user: " + e.getMessage());
+        final String accessToken = jwtUtil.generateToken(userDetails);
+        final String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+
+        Optional<User> userOptional = userService.findByEmail(authRequest.getEmail()).join();
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            return ResponseEntity.ok(
+                    new LoginResponse(
+                            accessToken,
+                            refreshToken,
+                            user.getEmail(),
+                            user.getFullName(),
+                            user.getRole().toString()
+                    )
+            );
         }
+
+        return ResponseEntity.status(404).body("User not found");
     }
+    @PostMapping("/refresh-token")
+    public ResponseEntity<?> refreshToken(@RequestBody RefreshTokenRequest request) {
+
+        String refreshToken = request.getRefreshToken();
+
+        if (!jwtUtil.validateToken(refreshToken)) {
+            return ResponseEntity.status(403).body("Invalid or expired refresh token");
+        }
+
+        String email = jwtUtil.getEmailFromToken(refreshToken);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+
+        String newAccessToken = jwtUtil.generateToken(userDetails);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "accessToken", newAccessToken,
+                        "email", email
+                )
+        );
+    }
+
     @GetMapping("/users/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         try {
